@@ -5,10 +5,11 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-# Set device
+# Set device to GPU if available, otherwise CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 1. Load Data
+# 1. Load the existing dataset
+# Note: download=False since you already downloaded it
 transform = transforms.ToTensor()
 train_dataset = torchvision.datasets.MNIST(
     root='data', 
@@ -18,12 +19,12 @@ train_dataset = torchvision.datasets.MNIST(
 )
 train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
 
-# 2. Define the Classification Autoencoder
-class ClassificationAutoencoder(nn.Module):
+# 2. Define the Autoencoder Architecture
+class Autoencoder(nn.Module):
     def __init__(self):
-        super(ClassificationAutoencoder, self).__init__()
+        super(Autoencoder, self).__init__()
         
-        # Encoder remains the same
+        # Encoder: Compresses 784 pixels down to 12 latent features
         self.encoder = nn.Sequential(
             nn.Linear(28 * 28, 128),
             nn.ReLU(),
@@ -32,70 +33,63 @@ class ClassificationAutoencoder(nn.Module):
             nn.Linear(64, 12)
         )
         
-        # Outputs 784 * 256 values
+        # Decoder: Reconstructs 784 pixels from the 12 latent features
         self.decoder = nn.Sequential(
             nn.Linear(12, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(),
-            # Output size: 28 pixels * 28 pixels * 256 classes
-            nn.Linear(128, 28 * 28 * 256) 
+            nn.Linear(128, 28 * 28),
+            nn.Sigmoid() # Outputs pixel values between 0 and 1
         )
 
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
-        
-        # Reshape the output for PyTorch's CrossEntropyLoss
-        # Shape becomes: (batch_size, num_classes, num_pixels)
-        x = x.view(-1, 256, 28 * 28)
         return x
 
-model = ClassificationAutoencoder().to(device)
+# Instantiate the model
+model = Autoencoder().to(device)
 
-# 3. Loss and Optimizer
-# CrossEntropyLoss expects logits, not probabilities
-criterion = nn.CrossEntropyLoss()
+# 3. Define the Loss Function and Optimizer
+# Mean Squared Error is standard for image reconstruction tasks
+criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 # 4. Training Loop
-def train_classification_autoencoder():
-    num_epochs = 10
-    print(f"Starting classification training on {device}...")
+def train_autoencoder():
+    num_epochs = 15
+    print(f"Starting training on {device}...")
     
     for epoch in range(num_epochs):
         total_loss = 0
         for data in train_loader:
-            img, _ = data
+            img, _ = data # We don't need the labels for an autoencoder
             
-            # Input images: Flatten to 784, keeping float values 0.0 - 1.0
-            input_img = img.view(img.size(0), -1).to(device)
-
-            # Target images: Scale to 0-255 and convert to integers (class labels)
-            # Shape remains (batch_size, 784)
-            target_img = (input_img * 255).long()
+            # Flatten the 28x28 images into a 784-element vector
+            img = img.view(img.size(0), -1).to(device)
             
-            # Forward pass
-            output_logits = model(input_img)
+            # Forward pass: reconstruct the image
+            output = model(img)
             
-            # Compute loss
-            # output_logits shape: (batch_size, 256, 784)
-            # target_img shape: (batch_size, 784) containing values 0 to 255
-            loss = criterion(output_logits, target_img)
+            # Compute the loss between the original and reconstructed image
+            loss = criterion(output, img)
             
-            # Backward pass and optimize
+            # Backward pass and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             total_loss += loss.item()
-            
+        
         avg_loss = total_loss / len(train_loader)
-        print(f'Epoch [{epoch+1}/{num_epochs}], Average Cross-Entropy Loss: {avg_loss:.4f}')
-
+        print(f'Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}')
+        
     print("Training finished.")
-    torch.save(model.state_dict(), 'mnist_classification_autoencoder.pth')
-    print("Model saved to 'mnist_classification_autoencoder.pth'")
+    
+    # Save the model weights
+    torch.save(model.state_dict(), 'weights/mnist_autoencoder.pth')
+    print("Model saved to 'weights/mnist_autoencoder.pth'")
 
 if __name__ == "__main__":
-    train_classification_autoencoder()
+    train_autoencoder()
