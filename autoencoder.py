@@ -5,11 +5,10 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-# Set device to GPU if available, otherwise CPU
+# Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 1. Load the existing dataset
-# Note: download=False since you already downloaded it
+# 1. Load Data
 transform = transforms.ToTensor()
 train_dataset = torchvision.datasets.MNIST(
     root='data', 
@@ -17,14 +16,56 @@ train_dataset = torchvision.datasets.MNIST(
     download=False, 
     transform=transform
 )
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
-# 2. Define the Autoencoder Architecture
+# --- NEW: Dynamic Foreground Binning Transformer ---
+class DynamicForegroundBinning:
+    def __init__(self, total_classes, sample_pixels):
+        self.total_classes = total_classes
+        fg_classes = total_classes - 1 # 1 class reserved for absolute 0
+        
+        # Isolate the foreground (pixels > 0)
+        non_zero_pixels = sample_pixels[sample_pixels > 0]
+        
+        # Calculate quantiles for the non-zero pixels
+        q = torch.linspace(0, 1, steps=fg_classes + 1, dtype=torch.float32)
+        self.edges = torch.unique(torch.quantile(non_zero_pixels.float(), q))
+        
+        print(f"Reserved Class 0 for absolute black (0.0).")
+        print(f"Created {len(self.edges)-1} foreground classes.")
+        print(f"Foreground Bin Boundaries: {self.edges.tolist()}")
+
+    def __call__(self, img_batch):
+        # Initialize everything as Class 0
+        class_targets = torch.zeros_like(img_batch, dtype=torch.long)
+        
+        # edges[:-1] represents the lower bounds of our foreground bins
+        for i, lower_bound in enumerate(self.edges[:-1]):
+            # Mask pixels that are greater than 0 AND >= the current bin's lower bound
+            mask = (img_batch > 0) & (img_batch >= lower_bound)
+            
+            # Assign the corresponding class (1, 2, or 3). 
+            # Because we iterate upward, higher bins will safely overwrite lower bins.
+            class_targets[mask] = i + 1
+            
+        return class_targets
+
+# Calculate bins using a sample of the data (~384 images is plenty)
+print("Calculating dynamic bins from data sample...")
+sample_data = []
+for i, (images, _) in enumerate(train_loader):
+    sample_data.append(images.flatten())
+    if i == 5: 
+        break
+target_transformer = DynamicForegroundBinning(total_classes=4, sample_pixels=torch.cat(sample_data))
+
+
+# 2. Define the Classification Autoencoder
 class Autoencoder(nn.Module):
     def __init__(self):
         super(Autoencoder, self).__init__()
         
-        # Encoder: Compresses 784 pixels down to 12 latent features
+        # Encoder remains the same
         self.encoder = nn.Sequential(
             nn.Linear(28 * 28, 128),
             nn.ReLU(),
@@ -33,63 +74,68 @@ class Autoencoder(nn.Module):
             nn.Linear(64, 12)
         )
         
-        # Decoder: Reconstructs 784 pixels from the 12 latent features
+        # UPDATED: Outputs 784 * 4 values instead of 784 * 256
         self.decoder = nn.Sequential(
             nn.Linear(12, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(),
-            nn.Linear(128, 28 * 28),
-            nn.Sigmoid() # Outputs pixel values between 0 and 1
+            # Output size: 28 pixels * 28 pixels * 4 classes
+            nn.Linear(128, 28 * 28 * 4) 
         )
 
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
+        
+        # UPDATED: Reshape the output for PyTorch's CrossEntropyLoss to match 4 classes
+        # Shape becomes: (batch_size, 4, num_pixels)
+        x = x.view(-1, 4, 28 * 28)
         return x
 
-# Instantiate the model
 model = Autoencoder().to(device)
 
-# 3. Define the Loss Function and Optimizer
-# Mean Squared Error is standard for image reconstruction tasks
-criterion = nn.MSELoss()
+# 3. Loss and Optimizer
+# CrossEntropyLoss expects logits, not probabilities[cite: 2]
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
 # 4. Training Loop
-def train_autoencoder():
-    num_epochs = 15
-    print(f"Starting training on {device}...")
+def train_classification_autoencoder(num_epochs=10):
+    print(f"\nStarting classification training on {device}...")
     
     for epoch in range(num_epochs):
         total_loss = 0
         for data in train_loader:
-            img, _ = data # We don't need the labels for an autoencoder
+            img, _ = data
             
-            # Flatten the 28x28 images into a 784-element vector
-            img = img.view(img.size(0), -1).to(device)
+            # Input images: Flatten to 784, keeping float values 0.0 - 1.0[cite: 2]
+            input_img = img.view(img.size(0), -1).to(device)
+
+            # UPDATED: Target images generated dynamically via our transformer
+            # Shape remains (batch_size, 784), values are exactly 0, 1, 2, or 3.
+            target_img = target_transformer(input_img).to(device)
             
-            # Forward pass: reconstruct the image
-            output = model(img)
+            # Forward pass[cite: 2]
+            output_logits = model(input_img)
             
-            # Compute the loss between the original and reconstructed image
-            loss = criterion(output, img)
+            # Compute loss[cite: 2]
+            # output_logits shape: (batch_size, 4, 784)
+            # target_img shape: (batch_size, 784)
+            loss = criterion(output_logits, target_img)
             
-            # Backward pass and optimization
+            # Backward pass and optimize[cite: 2]
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
             total_loss += loss.item()
-        
+            
         avg_loss = total_loss / len(train_loader)
-        print(f'Epoch [{epoch+1}/{num_epochs}], Average Loss: {avg_loss:.4f}')
-        
+        print(f'Epoch [{epoch+1}/{num_epochs}], Average Cross-Entropy Loss: {avg_loss:.4f}')
+
     print("Training finished.")
-    
-    # Save the model weights
-    torch.save(model.state_dict(), 'weights/mnist_autoencoder.pth')
-    print("Model saved to 'weights/mnist_autoencoder.pth'")
+    torch.save(model.state_dict(), 'weights/mnist_4class_autoencoder.pth')
 
 if __name__ == "__main__":
-    train_autoencoder()
+    train_classification_autoencoder(num_epochs=20)

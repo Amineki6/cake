@@ -1,5 +1,0 @@
-A standard grayscale image like MNIST uses 8-bit pixels, meaning every pixel can take on exactly 256 discrete values (from 0 for pure black, to 255 for pure white). Instead of asking the network to predict a continuous number, we ask it to choose which of the 256 distinct "classes" each pixel belongs to.
-
-
-Questions:
-1. Should we use a pretrained model for the autoencoder, or should we train it from scratch?
