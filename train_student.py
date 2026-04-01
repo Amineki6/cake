@@ -7,6 +7,8 @@ import os
 import tarfile
 import numpy as np
 import io
+import torchvision
+import torchvision.transforms as transforms
 
 # Import your teacher model architecture
 from autoencoder import Autoencoder
@@ -94,8 +96,29 @@ def distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2):
     
     return (lambda_1 * hard_loss) + (lambda_2 * soft_loss)
 
-# 4. Training Loop
-def train_student_distillation(data_path='results/samples.tar'):
+# 4. Evaluation: pixel-wise teacher-student agreement on real MNIST test data
+def evaluate_student(student_model, teacher_model, device):
+    test_dataset = torchvision.datasets.MNIST(root='data', train=False, download=True, transform=transforms.ToTensor())
+    test_loader = DataLoader(test_dataset, batch_size=512, shuffle=False)
+
+    student_model.eval()
+    teacher_model.eval()
+
+    agreed = 0
+    total = 0
+    with torch.no_grad():
+        for images, _ in test_loader:
+            images = images.view(images.size(0), -1).to(device)
+            teacher_preds = teacher_model(images).argmax(dim=1)  # (N, 784)
+            student_preds = student_model(images).argmax(dim=1)  # (N, 784)
+            agreed += (teacher_preds == student_preds).sum().item()
+            total += teacher_preds.numel()
+
+    return agreed / total
+
+
+# 5. Training Loop
+def train_student_distillation(data_path='results/samples.tar', student_weights_path='weights/student_autoencoder.pth'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting distillation on {device}...")
 
@@ -169,9 +192,10 @@ def train_student_distillation(data_path='results/samples.tar'):
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-    os.makedirs('weights', exist_ok=True)
-    torch.save(student_model.state_dict(), 'weights/student_autoencoder.pth')
-    print("Distillation finished. Student autoencoder saved to 'weights/student_autoencoder.pth'")
+    os.makedirs(os.path.dirname(student_weights_path) or 'weights', exist_ok=True)
+    torch.save(student_model.state_dict(), student_weights_path)
+    print(f"Distillation finished. Student autoencoder saved to '{student_weights_path}'")
+    return student_model
 
 if __name__ == "__main__":
     train_student_distillation()

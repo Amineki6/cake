@@ -1,4 +1,5 @@
 import os
+import uuid
 import argparse
 import wandb
 import torch
@@ -10,6 +11,9 @@ from autoencoder import Autoencoder
 # Import the updated sampling function
 from sampling import generate_samples
 
+# Import student training and evaluation
+from train_student import train_student_distillation, evaluate_student
+
 class MockWandbLogger:
     """A dummy logger to bypass the need for an active Weights & Biases account locally."""
     def log(self, metrics):
@@ -17,9 +21,14 @@ class MockWandbLogger:
 
 def train_sweep(use_wandb=False):
     if use_wandb:
+        api_key = os.environ.get("WANDB_API_KEY")
+        if api_key:
+            wandb.login(key=api_key)
         wandb.init()
+        run_id = wandb.run.id
         config = wandb.config
     else:
+        run_id = f"local_{uuid.uuid4().hex[:8]}"
         config = None
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -77,15 +86,17 @@ def train_sweep(use_wandb=False):
 
     # 4. Setup sampling parameters
     shape = (1, 28, 28) # Standard MNIST shape
-    samples_dir = "./results/samples_output"
+    # Per-run directories prevent path collisions in parallel sweep runs
+    samples_dir = f"./results/{run_id}/samples_output"
+    student_weights_path = f"./weights/student_{run_id}.pth"
     os.makedirs(samples_dir, exist_ok=True)
-    
+
     if use_wandb:
         logger_wandb = wandb
     else:
         logger_wandb = MockWandbLogger()
 
-    # 5. Execute
+    # 5. Generate distilled samples
     print("Initiating sampling process...")
     dataset = generate_samples(
         model_teacher=model_teacher,
@@ -95,8 +106,20 @@ def train_sweep(use_wandb=False):
         logger_wandb=logger_wandb,
         samples_dir=samples_dir
     )
-
     print(f"Sampling complete. Archive saved at: {dataset.archive}")
+
+    # 6. Train student on generated samples
+    print("Training student model on distilled samples...")
+    student_model = train_student_distillation(
+        data_path=dataset.archive,
+        student_weights_path=student_weights_path
+    )
+
+    # 7. Evaluate: pixel-wise teacher-student agreement on real MNIST test data
+    print("Evaluating student vs teacher on real MNIST test set...")
+    pixel_accuracy = evaluate_student(student_model, model_teacher, device)
+    print(f"Pixel-wise teacher-student agreement: {pixel_accuracy:.4f}")
+    logger_wandb.log({"accuracy": pixel_accuracy})
 
 def main():
     parser = argparse.ArgumentParser(description="Run CAKE sample generation")
