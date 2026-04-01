@@ -1,5 +1,4 @@
 import os
-import uuid
 import argparse
 import wandb
 import torch
@@ -14,22 +13,13 @@ from sampling import generate_samples
 # Import student training and evaluation
 from train_student import train_student_distillation, evaluate_student
 
-class MockWandbLogger:
-    """A dummy logger to bypass the need for an active Weights & Biases account locally."""
-    def log(self, metrics):
-        pass
-
-def train_sweep(use_wandb=False):
-    if use_wandb:
-        api_key = os.environ.get("WANDB_API_KEY")
-        if api_key:
-            wandb.login(key=api_key)
-        wandb.init()
-        run_id = wandb.run.id
-        config = wandb.config
-    else:
-        run_id = f"local_{uuid.uuid4().hex[:8]}"
-        config = None
+def train_sweep():
+    api_key = os.environ.get("WANDB_API_KEY")
+    if api_key:
+        wandb.login(key=api_key)
+    wandb.init(project="cake_distillation")
+    run_id = wandb.run.name  # e.g. "golden-surf", used for file paths
+    config = wandb.config
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running on device: {device}")
@@ -91,11 +81,6 @@ def train_sweep(use_wandb=False):
     student_weights_path = f"./weights/student_{run_id}.pth"
     os.makedirs(samples_dir, exist_ok=True)
 
-    if use_wandb:
-        logger_wandb = wandb
-    else:
-        logger_wandb = MockWandbLogger()
-
     # 5. Generate distilled samples
     print("Initiating sampling process...")
     dataset = generate_samples(
@@ -103,7 +88,7 @@ def train_sweep(use_wandb=False):
         shape=shape,
         cfg=cfg,
         device=device,
-        logger_wandb=logger_wandb,
+        logger_wandb=wandb,
         samples_dir=samples_dir
     )
     print(f"Sampling complete. Archive saved at: {dataset.archive}")
@@ -119,7 +104,7 @@ def train_sweep(use_wandb=False):
     print("Evaluating student vs teacher on real MNIST test set...")
     pixel_accuracy = evaluate_student(student_model, model_teacher, device)
     print(f"Pixel-wise teacher-student agreement: {pixel_accuracy:.4f}")
-    logger_wandb.log({"accuracy": pixel_accuracy})
+    wandb.log({"accuracy": pixel_accuracy})
 
 def main():
     parser = argparse.ArgumentParser(description="Run CAKE sample generation")
@@ -154,9 +139,9 @@ def main():
             }
         }
         sweep_id = wandb.sweep(sweep_config, project="cake_distillation")
-        wandb.agent(sweep_id, function=lambda: train_sweep(use_wandb=True), count=args.sweep_count)
+        wandb.agent(sweep_id, function=train_sweep, count=args.sweep_count)
     else:
-        train_sweep(use_wandb=False)
+        train_sweep()
 
 if __name__ == "__main__":
     main()
