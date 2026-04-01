@@ -51,15 +51,15 @@ def train_sweep(use_wandb=False):
     # --- HYPERPARAMETER PATCH FOR PIXEL-WISE STABILITY ---
     
     # Base defaults
-    noise_val = 1e-1
-    weight_cls = 1e3 / 784
-    weight_contr = 1e1 / 784
-    weight_tv = 1e5 / 784
-    
+    lr_val = 0.85668
+    weight_cls = 3.00469
+    weight_contr = 0.001222
+    weight_tv = 931.79542
+
     # Override with sweep configs if available
     if config is not None:
-        if "sampling_noise" in config:
-            noise_val = config.sampling_noise
+        if "sampling_lr" in config:
+            lr_val = config.sampling_lr
         if "sampling_weight_cls" in config:
             weight_cls = config.sampling_weight_cls
         if "sampling_weight_contr" in config:
@@ -67,7 +67,7 @@ def train_sweep(use_wandb=False):
         if "sampling_weight_tv" in config:
             weight_tv = config.sampling_weight_tv
 
-    OmegaConf.update(cfg, "sampling.noise", noise_val, merge=True)
+    OmegaConf.update(cfg, "sampling.lr", lr_val, merge=True)
     OmegaConf.update(cfg, "sampling.weight.cls", weight_cls, merge=True)
     OmegaConf.update(cfg, "sampling.weight.contr", weight_contr, merge=True)
     OmegaConf.update(cfg, "sampling.weight.tv", weight_tv, merge=True)
@@ -135,7 +135,7 @@ def main():
                 'goal': 'maximize'
             },
             'parameters': {
-                'sampling_noise': {
+                'sampling_lr': {
                     'min': 0.01,
                     'max': 1.0
                 },
@@ -153,7 +153,7 @@ def main():
                 }
             }
         }
-        sweep_id = wandb.sweep(sweep_config, project="CAKE-Sampling")
+        sweep_id = wandb.sweep(sweep_config, project="cake_distillation")
         wandb.agent(sweep_id, function=lambda: train_sweep(use_wandb=True), count=args.sweep_count)
     else:
         train_sweep(use_wandb=False)

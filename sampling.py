@@ -133,7 +133,7 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
     with Progress() as progress:
         task = progress.add_task("Sampling Batches", total=num_batches)
         for idx in range(num_batches):
-            eps = interpolate(idx, num_batches, cfg.sampling.noise, cfg.sampling.noise_decay_magnitude, cfg.sampling.noise_decay_schedule) if cfg.sampling.noise_decay else cfg.sampling.noise
+            eps = interpolate(idx, num_batches, cfg.sampling.lr, cfg.sampling.lr_decay_magnitude, cfg.sampling.lr_decay_schedule) if cfg.sampling.lr_decay else cfg.sampling.lr
 
             # 0. UPDATED: Initialize from the 4 discrete classes (0, 1, 2, 3) 
             # and cast to float/bfloat16 before optimization
@@ -166,12 +166,12 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
                     batch_x.data += np.sqrt(2 * eps) * torch.randn_like(batch_x)
 
             check_finite(loss, loss_dict)
-            accuracy = (preds.argmax(dim=2) == batch_y).float().mean() * 100
+            sampling_pixel_acc = (preds.argmax(dim=2) == batch_y).float().mean()
 
             if hasattr(logger_wandb, "log"):
                 logger_wandb.log({
                     "loss": loss.item() if isinstance(loss, torch.Tensor) else loss,
-                    "accuracy": accuracy.item() if isinstance(accuracy, torch.Tensor) else accuracy,
+                    "sampling_pixel_acc": sampling_pixel_acc.item() if isinstance(sampling_pixel_acc, torch.Tensor) else sampling_pixel_acc,
                     "step": idx
                 })
 
@@ -183,14 +183,14 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
 
             save_batch_to_tar(batch_x.detach().view(batch_size, *shape), batch_y_save, idx, samples_dir, eps, tar_archive)
             
-            progress.update(task, advance=1, description=f"Batch {idx+1} | Acc: {accuracy:.2f}%")
+            progress.update(task, advance=1, description=f"Batch {idx+1} | SamplingAcc: {sampling_pixel_acc:.4f}")
             rtpt.step()
 
     tar_archive.close()
     return TarDataset(tar_path, cfg.student.data.eps_min, cfg.student.data.eps_max)
 
-def save_batch_to_tar(bx, by, idx, s_dir, noise, archive):
-    eps_dir = f"{idx:0>4}_{noise:0>2.8f}"
+def save_batch_to_tar(bx, by, idx, s_dir, lr, archive):
+    eps_dir = f"{idx:0>4}_{lr:0>2.8f}"
     os.makedirs(os.path.join(s_dir, eps_dir), exist_ok=True)
     for i in range(bx.shape[0]):
         fname = f"{idx*bx.shape[0]+i:0>9}.npz"

@@ -140,12 +140,12 @@ sampling:
     cls: 1e3
     tv: 1e5
     entropy: 0.0
-  noise: 1e-1
+  lr: 1e-1
   langevin: false  # Use langevin dynamics
   smooth_labels: true  # Use smooth labels (teacher model predictions)
-  noise_decay: true  # Decay noise over different sets
-  noise_decay_schedule: "linear"  # [linear, cosine]
-  noise_decay_magnitude: 4  # Magnitude of noise decay. Noise range will then start at $noise and ends at $noise / $10**noise_decay_magnitude
+  lr_decay: true  # Decay lr over different sets
+  lr_decay_schedule: "linear"  # [linear, cosine]
+  lr_decay_magnitude: 4  # Magnitude of lr decay. lr range will then start at $lr and ends at $lr / $10**lr_decay_magnitude
   num_steps: 500  # Number of update steps for each set
   batch_size: 64  # Number of samples for each set
   num_batches: 1024  # Number of sets to generate
