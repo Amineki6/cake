@@ -34,5 +34,9 @@ echo "Activating virtual environment and installing requirements..."
 source .venv/bin/activate
 uv pip install -r requirements.txt
 
+# 5. Add Weights & Biases API Key to the activate script
+echo "Configuring WANDB_API_KEY..."
+echo 'export WANDB_API_KEY="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"' >> .venv/bin/activate
+
 echo "Setup complete."
 echo "Run 'source .venv/bin/activate' to start working."
