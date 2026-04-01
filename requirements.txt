@@ -79,7 +79,6 @@ ordered-set==4.1.0
 packaging==24.2
 pandas==2.3.3
 parso==0.8.6
-pathtools==0.1.2
 pexpect==4.9.0
 pickleshare==0.7.5
 Pillow==10.0.1
@@ -139,6 +138,7 @@ tzdata==2025.3
 urllib3==2.6.3
 uvicorn==0.41.0
 wandb==0.25.1
+watchdog>=4.0.0
 wcwidth==0.6.0
 websocket-client==1.9.0
 websockets==12.0
