@@ -13,7 +13,7 @@ transform = transforms.ToTensor()
 train_dataset = torchvision.datasets.MNIST(
     root='data', 
     train=True, 
-    download=False, 
+    download=True, 
     transform=transform
 )
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
