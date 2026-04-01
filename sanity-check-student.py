@@ -1,13 +1,14 @@
+import argparse
 import torch
 import matplotlib.pyplot as plt
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from autoencoder import Autoencoder, target_transformer
+from autoencoder import Autoencoder
 from train_student import StudentAutoencoder
 
-def visualize_comparison(num_samples=6):
+def visualize_comparison(num_samples=6, student_weights='weights/student_autoencoder.pth'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running comparative evaluation on {device}...")
 
@@ -34,30 +35,27 @@ def visualize_comparison(num_samples=6):
     # 3. Load the Trained Student Autoencoder
     student_model = StudentAutoencoder().to(device)
     try:
-        student_model.load_state_dict(torch.load('weights/student_autoencoder.pth', map_location=device))
-        print("Loaded 'student_autoencoder.pth' successfully.")
+        student_model.load_state_dict(torch.load(student_weights, map_location=device))
+        print(f"Loaded '{student_weights}' successfully.")
         student_model.eval()
     except FileNotFoundError:
-        print("Error: 'weights/student_autoencoder.pth' not found. Please train the student first.")
+        print(f"Error: '{student_weights}' not found. Please train the student first.")
         return
 
     # 4. Grab a single batch of test data
     dataiter = iter(test_loader)
     images, _ = next(dataiter)
     images_flat = images.view(images.size(0), -1).to(device)
-    
-    # Transform test images into grouped pixel values and cast to float
-    transformed_input = target_transformer(images_flat).float()
 
     # 5. Forward Passes
     with torch.no_grad():
         # Teacher's full reconstruction
-        teacher_logits = teacher_model(transformed_input)
+        teacher_logits = teacher_model(images_flat)
         # Convert 4-class logits to class indices (0-3), then scale to [0, 1] pseudo-grayscale
         teacher_reconstructed = teacher_logits.argmax(dim=1).float() / 3.0
-        
+
         # Student's full reconstruction (No longer needs teacher's decoder)
-        student_logits = student_model(transformed_input)
+        student_logits = student_model(images_flat)
         student_reconstructed = student_logits.argmax(dim=1).float() / 3.0
         
     # Reshape the outputs back to 28x28 image dimensions
@@ -91,4 +89,9 @@ def visualize_comparison(num_samples=6):
     plt.show()
 
 if __name__ == "__main__":
-    visualize_comparison(num_samples=8)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--student-weights", default="weights/student_autoencoder.pth",
+                        help="Path to student weights, e.g. weights/student_golden-surf.pth")
+    parser.add_argument("--num-samples", type=int, default=8)
+    args = parser.parse_args()
+    visualize_comparison(num_samples=args.num_samples, student_weights=args.student_weights)
