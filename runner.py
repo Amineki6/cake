@@ -1,4 +1,6 @@
 import os
+import argparse
+import wandb
 import torch
 from omegaconf import OmegaConf
 
@@ -10,10 +12,16 @@ from sampling import generate_samples
 
 class MockWandbLogger:
     """A dummy logger to bypass the need for an active Weights & Biases account locally."""
-    def log_metrics(self, metrics, step):
+    def log(self, metrics):
         pass
 
-def main():
+def train_sweep(use_wandb=False):
+    if use_wandb:
+        wandb.init()
+        config = wandb.config
+    else:
+        config = None
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running on device: {device}")
 
@@ -30,21 +38,31 @@ def main():
     OmegaConf.update(cfg, "env.group_tag", "dev", merge=True)
     OmegaConf.update(cfg, "env.notes", "Testing autoencoder sampling", merge=True)
 
-    # Optional: Scale down the sampling parameters for a quick local dry-run
-    # cfg.sampling.num_steps = 10
-    # cfg.sampling.batch_size = 10
-    cfg.sampling.num_groups = 4 
-    # cfg.sampling.num_batches = 2
 
     # --- HYPERPARAMETER PATCH FOR PIXEL-WISE STABILITY ---
     
-    # Lower the learning rate / noise scale
-    OmegaConf.update(cfg, "sampling.noise", 1e-2, merge=True)
+    # Base defaults
+    noise_val = 1e-1
+    weight_cls = 1e3 / 784
+    weight_contr = 1e1 / 784
+    weight_tv = 1e5 / 784
     
-    # Drastically reduce the loss weights since we have 784x more signal
-    OmegaConf.update(cfg, "sampling.weight.cls", 1.0, merge=True)
-    OmegaConf.update(cfg, "sampling.weight.contr", 1.0, merge=True)
-    OmegaConf.update(cfg, "sampling.weight.tv", 10.0, merge=True) # TV needs a bit more weight to smooth the image
+    # Override with sweep configs if available
+    if config is not None:
+        if "sampling_noise" in config:
+            noise_val = config.sampling_noise
+        if "sampling_weight_cls" in config:
+            weight_cls = config.sampling_weight_cls
+        if "sampling_weight_contr" in config:
+            weight_contr = config.sampling_weight_contr
+        if "sampling_weight_tv" in config:
+            weight_tv = config.sampling_weight_tv
+
+    OmegaConf.update(cfg, "sampling.noise", noise_val, merge=True)
+    OmegaConf.update(cfg, "sampling.weight.cls", weight_cls, merge=True)
+    OmegaConf.update(cfg, "sampling.weight.contr", weight_contr, merge=True)
+    OmegaConf.update(cfg, "sampling.weight.tv", weight_tv, merge=True)
+    OmegaConf.update(cfg, "sampling.weight.entropy", 0.0, merge=True)
 
     # 3. Instantiate the teacher model
     model_teacher = Autoencoder().to(device)
@@ -62,7 +80,10 @@ def main():
     samples_dir = "./results/samples_output"
     os.makedirs(samples_dir, exist_ok=True)
     
-    logger_wandb = MockWandbLogger()
+    if use_wandb:
+        logger_wandb = wandb
+    else:
+        logger_wandb = MockWandbLogger()
 
     # 5. Execute
     print("Initiating sampling process...")
@@ -76,6 +97,43 @@ def main():
     )
 
     print(f"Sampling complete. Archive saved at: {dataset.archive}")
+
+def main():
+    parser = argparse.ArgumentParser(description="Run CAKE sample generation")
+    parser.add_argument("--sweep", action="store_true", help="Run hyperparameter optimization sweep with wandb")
+    parser.add_argument("--sweep-count", type=int, default=10, help="Number of sweep iterations to run")
+    args = parser.parse_args()
+
+    if args.sweep:
+        sweep_config = {
+            'method': 'bayes',
+            'metric': {
+                'name': 'accuracy',
+                'goal': 'maximize'
+            },
+            'parameters': {
+                'sampling_noise': {
+                    'min': 0.01,
+                    'max': 1.0
+                },
+                'sampling_weight_cls': {
+                    'min': 0.1,
+                    'max': 20.0
+                },
+                'sampling_weight_contr': {
+                    'min': 0.001,
+                    'max': 2.0
+                },
+                'sampling_weight_tv': {
+                    'min': 10.0,
+                    'max': 1000.0
+                }
+            }
+        }
+        sweep_id = wandb.sweep(sweep_config, project="CAKE-Sampling")
+        wandb.agent(sweep_id, function=lambda: train_sweep(use_wandb=True), count=args.sweep_count)
+    else:
+        train_sweep(use_wandb=False)
 
 if __name__ == "__main__":
     main()

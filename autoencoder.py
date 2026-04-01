@@ -96,7 +96,7 @@ class Autoencoder(nn.Module):
 model = Autoencoder().to(device)
 
 # 3. Loss and Optimizer
-# CrossEntropyLoss expects logits, not probabilities[cite: 2]
+# CrossEntropyLoss expects logits, not probabilities
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
@@ -109,22 +109,22 @@ def train_classification_autoencoder(num_epochs=10):
         for data in train_loader:
             img, _ = data
             
-            # Input images: Flatten to 784, keeping float values 0.0 - 1.0[cite: 2]
+            # Input images: Flatten to 784, keeping float values 0.0 - 1.0
             input_img = img.view(img.size(0), -1).to(device)
 
             # UPDATED: Target images generated dynamically via our transformer
             # Shape remains (batch_size, 784), values are exactly 0, 1, 2, or 3.
             target_img = target_transformer(input_img).to(device)
             
-            # Forward pass[cite: 2]
+            # Forward pass
             output_logits = model(input_img)
             
-            # Compute loss[cite: 2]
+            # Compute loss
             # output_logits shape: (batch_size, 4, 784)
             # target_img shape: (batch_size, 784)
             loss = criterion(output_logits, target_img)
             
-            # Backward pass and optimize[cite: 2]
+            # Backward pass and optimize
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

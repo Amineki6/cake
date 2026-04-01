@@ -4,7 +4,7 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from autoencoder import Autoencoder
+from autoencoder import Autoencoder, target_transformer
 from train_student import StudentAutoencoder
 
 def visualize_comparison(num_samples=6):
@@ -46,15 +46,18 @@ def visualize_comparison(num_samples=6):
     images, _ = next(dataiter)
     images_flat = images.view(images.size(0), -1).to(device)
     
+    # Transform test images into grouped pixel values and cast to float
+    transformed_input = target_transformer(images_flat).float()
+
     # 5. Forward Passes
     with torch.no_grad():
         # Teacher's full reconstruction
-        teacher_logits = teacher_model(images_flat)
+        teacher_logits = teacher_model(transformed_input)
         # Convert 4-class logits to class indices (0-3), then scale to [0, 1] pseudo-grayscale
         teacher_reconstructed = teacher_logits.argmax(dim=1).float() / 3.0
         
         # Student's full reconstruction (No longer needs teacher's decoder)
-        student_logits = student_model(images_flat)
+        student_logits = student_model(transformed_input)
         student_reconstructed = student_logits.argmax(dim=1).float() / 3.0
         
     # Reshape the outputs back to 28x28 image dimensions

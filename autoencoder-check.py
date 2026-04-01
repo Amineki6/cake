@@ -4,8 +4,8 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-# Import the UPDATED 4-class Autoencoder from your training script
-from autoencoder import Autoencoder
+# Import the UPDATED 4-class Autoencoder and the transformer from your training script
+from autoencoder import Autoencoder, target_transformer
 
 def plot_reconstructions(model, dataloader, device, num_samples=5):
     # Set model to evaluation mode
@@ -23,11 +23,14 @@ def plot_reconstructions(model, dataloader, device, num_samples=5):
     
     # Perform the forward pass without tracking gradients[cite: 3]
     with torch.no_grad():
+        # The Teacher now expects continuous original pixels, NOT binned targets
         logits = model(images_flat)
         
         # Extract the predicted classes (0, 1, 2, or 3) by finding the max logit per pixel[cite: 3]
         reconstructed_classes = torch.argmax(logits, dim=1) 
         
+        # Ground Truth Binned Images (for comparison, if needed)
+        # target_img = target_transformer(images_flat)        
         # NEW: Map the 4 classes to visual grayscale values (0.0 to 1.0)
         # Class 0 -> 0.00 (Black background)
         # Class 1 -> 0.33 (Dim grey)

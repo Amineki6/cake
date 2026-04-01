@@ -127,8 +127,8 @@ def train_student_distillation(data_path='results/samples.tar'):
         return
 
     # Hyperparameters for KD
-    num_epochs = 40
-    tau = 2.0       
+    num_epochs = 20
+    tau = 1.0       
     lambda_1 = 0.5  
     lambda_2 = 1.0  
 

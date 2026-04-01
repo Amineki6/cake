@@ -86,7 +86,15 @@ def compute_loss(preds, batch_y, cfg, batch_x, num_classes, num_groups, num_pixe
     if cfg.sampling.weight.contr > 0.0:
         preds_A = preds.unsqueeze(1).expand(-1, num_groups, -1, -1, -1)
         preds_B = preds.unsqueeze(2).expand(-1, -1, num_groups, -1, -1)
-        loss_contrastive = F.mse_loss(preds_A, preds_B, reduction="mean")
+        
+        # Implement the indicator mask I[y_i != y_j]
+        y_A = batch_y.unsqueeze(2) # Shape: (B, G, 1, P)
+        y_B = batch_y.unsqueeze(1) # Shape: (B, 1, G, P)
+        mask = (y_A != y_B).unsqueeze(3).float() # Shape: (B, G, G, 1, P)
+        
+        # Calculate squared distance and apply mask
+        squared_dist = (preds_A - preds_B) ** 2
+        loss_contrastive = (squared_dist * mask).sum() / (mask.sum() + 1e-9)
     else:
         loss_contrastive = torch.zeros(1, device=batch_x.device)
     
@@ -127,7 +135,11 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
         for idx in range(num_batches):
             eps = interpolate(idx, num_batches, cfg.sampling.noise, cfg.sampling.noise_decay_magnitude, cfg.sampling.noise_decay_schedule) if cfg.sampling.noise_decay else cfg.sampling.noise
 
-            batch_x = torch.randn(group_batch_size, num_groups, *shape, device=device, dtype=dtype, requires_grad=True)
+            # 0. UPDATED: Initialize from the 4 discrete classes (0, 1, 2, 3) 
+            # and cast to float/bfloat16 before optimization
+            # Initialize as continuous uniform noise [0.0, 1.0]
+            batch_x_init = torch.rand((group_batch_size, num_groups, *shape), device=device)
+            batch_x = batch_x_init.to(dtype).requires_grad_(True)
 
             # 1. UPDATED: Pixel-level assignment
             # Vectorized version of your randperm logic for performance
@@ -155,6 +167,13 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
 
             check_finite(loss, loss_dict)
             accuracy = (preds.argmax(dim=2) == batch_y).float().mean() * 100
+
+            if hasattr(logger_wandb, "log"):
+                logger_wandb.log({
+                    "loss": loss.item() if isinstance(loss, torch.Tensor) else loss,
+                    "accuracy": accuracy.item() if isinstance(accuracy, torch.Tensor) else accuracy,
+                    "step": idx
+                })
 
             # 4. UPDATED: Target Saving for Student
             if cfg.sampling.smooth_labels:

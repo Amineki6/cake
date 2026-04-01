@@ -147,9 +147,9 @@ sampling:
   noise_decay_schedule: "linear"  # [linear, cosine]
   noise_decay_magnitude: 4  # Magnitude of noise decay. Noise range will then start at $noise and ends at $noise / $10**noise_decay_magnitude
   num_steps: 500  # Number of update steps for each set
-  batch_size: 100  # Number of samples for each set
-  num_batches: 256  # Number of sets to generate
-  num_groups: 10  # Number of contrastive groups in the sample sets
+  batch_size: 64  # Number of samples for each set
+  num_batches: 1024  # Number of sets to generate
+  num_groups: 4  # Number of contrastive groups in the sample sets
   contr_method: "mse"  # Can be one of ["mse", "snn"]
   snn_temperature: 1.0  # Soft nearest neighbor loss temperature
 
