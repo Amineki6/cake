@@ -10,6 +10,7 @@ import io
 import torchvision
 import torchvision.transforms as transforms
 import wandb
+import argparse
 
 # Import your teacher model architecture
 from autoencoder import Autoencoder
@@ -99,7 +100,7 @@ def distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2):
     return total, hard_loss, soft_loss
 
 # 4. Evaluation: pixel-wise teacher-student agreement on real MNIST test data
-def evaluate_student(student_model, teacher_model, device, num_classes=4):
+def evaluate_student(student_model, teacher_model, device, num_classes=4, use_wandb=True):
     test_dataset = torchvision.datasets.MNIST(root='data', train=False, download=True, transform=transforms.ToTensor())
     test_loader = DataLoader(test_dataset, batch_size=512, shuffle=False)
 
@@ -147,21 +148,22 @@ def evaluate_student(student_model, teacher_model, device, num_classes=4):
     print(f"Foreground mIoU:   {foreground_iou:.4f}")
     print(f"--------------------------\n")
 
-    class_acc_list = class_accuracy.cpu().tolist()
-    class_iou_list = class_iou.cpu().tolist()
-    wandb.log({
-        "eval/overall_accuracy": overall_acc.item(),
-        "eval/foreground_miou": foreground_iou,
-        **{f"eval/class_{c}_accuracy": class_acc_list[c] for c in range(num_classes)},
-        **{f"eval/class_{c}_iou": class_iou_list[c] for c in range(num_classes)},
-    })
+    if use_wandb:
+        class_acc_list = class_accuracy.cpu().tolist()
+        class_iou_list = class_iou.cpu().tolist()
+        wandb.log({
+            "eval/overall_accuracy": overall_acc.item(),
+            "eval/foreground_miou": foreground_iou,
+            **{f"eval/class_{c}_accuracy": class_acc_list[c] for c in range(num_classes)},
+            **{f"eval/class_{c}_iou": class_iou_list[c] for c in range(num_classes)},
+        })
 
     # Return Foreground mIoU as the primary metric for tracking
     return foreground_iou
 
 
 # 5. Training Loop
-def train_student_distillation(data_path='results/samples.tar', student_weights_path='weights/student_autoencoder.pth'):
+def train_student_distillation(data_path='results/samples.tar', student_weights_path='weights/student_autoencoder.pth', use_wandb=True):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Starting distillation on {device}...")
 
@@ -194,7 +196,7 @@ def train_student_distillation(data_path='results/samples.tar', student_weights_
 
     # Hyperparameters for KD
     num_epochs = 20
-    tau = 3.0       
+    tau = 2.0       
     lambda_1 = 0.5  
     lambda_2 = 1.0  
 
@@ -236,12 +238,15 @@ def train_student_distillation(data_path='results/samples.tar', student_weights_
 
         n = len(dataloader)
         avg_loss = total_loss / n
-        wandb.log({
-            "student/loss_total": avg_loss,
-            "student/loss_hard": total_hard / n,
-            "student/loss_soft": total_soft / n,
-            "student/epoch": epoch + 1,
-        })
+        
+        if use_wandb:
+            wandb.log({
+                "student/loss_total": avg_loss,
+                "student/loss_hard": total_hard / n,
+                "student/loss_soft": total_soft / n,
+                "student/epoch": epoch + 1,
+            })
+            
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
     os.makedirs(os.path.dirname(student_weights_path) or 'weights', exist_ok=True)
@@ -250,4 +255,15 @@ def train_student_distillation(data_path='results/samples.tar', student_weights_
     return student_model
 
 if __name__ == "__main__":
-    train_student_distillation()
+    # parse flags
+    parser = argparse.ArgumentParser(description="Train student model with knowledge distillation")
+    parser.add_argument("--data_path", type=str, default="results/samples.tar", help="Path to the synthetic data")
+    parser.add_argument("--student_weights_path", type=str, default="weights/student_autoencoder.pth", help="Path to save student model weights")
+    args = parser.parse_args()
+
+    # Pass use_wandb=False so it doesn't log when run standalone
+    train_student_distillation(
+        data_path=args.data_path,
+        student_weights_path=args.student_weights_path,
+        use_wandb=False 
+    )

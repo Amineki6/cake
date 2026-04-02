@@ -69,6 +69,20 @@ def interpolate(t, T, start_value, decay_magnitude, schedule, base=10):
 
 # --- CORE LOGIC UPDATES ---
 
+def focal_loss(inputs, targets, gamma=2.0, alpha=None):
+    """
+    Focal loss for multi-class classification.
+    inputs: (N, C, *) logits
+    targets: (N, *) class indices
+    gamma: focusing parameter — higher values down-weight easy examples more aggressively
+    alpha: (C,) per-class weight tensor, or None
+    """
+    ce = F.cross_entropy(inputs, targets.long(), weight=alpha, reduction="none")
+    pt = torch.exp(-ce)  # probability of the correct class
+    loss = (1.0 - pt) ** gamma * ce
+    return loss.mean()
+
+
 def compute_loss(preds, batch_y, cfg, batch_x, num_classes, num_groups, num_pixels):
     """
     preds: (group_batch_size, num_groups, num_classes, num_pixels)
@@ -77,9 +91,15 @@ def compute_loss(preds, batch_y, cfg, batch_x, num_classes, num_groups, num_pixe
     # Use .reshape instead of .view to handle the non-contiguous permuted tensor
     preds_v = preds.reshape(-1, num_classes, num_pixels)
     batch_y_v = batch_y.reshape(-1, num_pixels)
-    
-    # Classification loss
-    loss_classification = F.cross_entropy(preds_v, batch_y_v.long())
+
+    # Classification loss — focal loss to handle class-0 dominance
+    focal_gamma = getattr(cfg.sampling, "focal_gamma", 2.0)
+    focal_alpha = getattr(cfg.sampling, "focal_alpha", None)
+    if focal_alpha is not None:
+        alpha_tensor = torch.tensor(focal_alpha, dtype=preds_v.dtype, device=preds_v.device)
+    else:
+        alpha_tensor = None
+    loss_classification = focal_loss(preds_v, batch_y_v, gamma=focal_gamma, alpha=alpha_tensor)
     loss_classification *= num_groups
 
     # Contrastive Loss (MSE broadcasts over pixels)
