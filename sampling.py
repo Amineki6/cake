@@ -92,13 +92,12 @@ def compute_loss(preds, batch_y, cfg, batch_x, num_classes, num_groups, num_pixe
     preds_v = preds.reshape(-1, num_classes, num_pixels)
     batch_y_v = batch_y.reshape(-1, num_pixels)
 
-    # Classification loss — focal loss to handle class-0 dominance
+    # Classification loss — focal loss with dynamic alpha from inverse sqrt class frequency
     focal_gamma = getattr(cfg.sampling, "focal_gamma", 2.0)
-    focal_alpha = getattr(cfg.sampling, "focal_alpha", None)
-    if focal_alpha is not None:
-        alpha_tensor = torch.tensor(focal_alpha, dtype=preds_v.dtype, device=preds_v.device)
-    else:
-        alpha_tensor = None
+    counts = torch.bincount(batch_y_v.reshape(-1).long(), minlength=num_classes).float().clamp(min=1.0)
+    inv_sqrt_freq = counts.rsqrt()                        # 1 / sqrt(count_c)
+    alpha_tensor = inv_sqrt_freq / inv_sqrt_freq.sum()   # normalise so weights sum to 1
+    alpha_tensor = alpha_tensor.to(dtype=preds_v.dtype)
     loss_classification = focal_loss(preds_v, batch_y_v, gamma=focal_gamma, alpha=alpha_tensor)
     loss_classification *= num_groups
 
