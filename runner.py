@@ -102,9 +102,9 @@ def train_sweep():
 
     # 7. Evaluate: pixel-wise teacher-student agreement on real MNIST test data
     print("Evaluating student vs teacher on real MNIST test set...")
-    pixel_accuracy = evaluate_student(student_model, model_teacher, device)
-    print(f"Pixel-wise teacher-student agreement: {pixel_accuracy:.4f}")
-    wandb.log({"accuracy": pixel_accuracy})
+    foreground_miou = evaluate_student(student_model, model_teacher, device)
+    print(f"Foreground mIoU (teacher-student): {foreground_miou:.4f}")
+    wandb.log({"foreground_miou": foreground_miou})
 
 def main():
     parser = argparse.ArgumentParser(description="Run CAKE sample generation")
@@ -116,7 +116,7 @@ def main():
         sweep_config = {
             'method': 'bayes',
             'metric': {
-                'name': 'accuracy',
+                'name': 'foreground_miou',
                 'goal': 'maximize'
             },
             'parameters': {

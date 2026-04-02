@@ -99,24 +99,65 @@ def distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2):
     return total, hard_loss, soft_loss
 
 # 4. Evaluation: pixel-wise teacher-student agreement on real MNIST test data
-def evaluate_student(student_model, teacher_model, device):
+def evaluate_student(student_model, teacher_model, device, num_classes=4):
     test_dataset = torchvision.datasets.MNIST(root='data', train=False, download=True, transform=transforms.ToTensor())
     test_loader = DataLoader(test_dataset, batch_size=512, shuffle=False)
 
     student_model.eval()
     teacher_model.eval()
 
-    agreed = 0
-    total = 0
+    intersection = torch.zeros(num_classes, device=device)
+    union = torch.zeros(num_classes, device=device)
+    target_counts = torch.zeros(num_classes, device=device)
+    correct_counts = torch.zeros(num_classes, device=device)
+
     with torch.no_grad():
         for images, _ in test_loader:
             images = images.view(images.size(0), -1).to(device)
+            
+            # The teacher's predictions act as our pseudo-ground truth
             teacher_preds = teacher_model(images).argmax(dim=1)  # (N, 784)
             student_preds = student_model(images).argmax(dim=1)  # (N, 784)
-            agreed += (teacher_preds == student_preds).sum().item()
-            total += teacher_preds.numel()
 
-    return agreed / total
+            for c in range(num_classes):
+                t_mask = (teacher_preds == c)
+                s_mask = (student_preds == c)
+
+                # Track hits and totals for Accuracy
+                target_counts[c] += t_mask.sum()
+                correct_counts[c] += (t_mask & s_mask).sum()
+
+                # Track overlap for IoU
+                intersection[c] += (t_mask & s_mask).sum()
+                union[c] += (t_mask | s_mask).sum()
+
+    # Add a small epsilon (1e-8) to avoid division by zero
+    class_accuracy = correct_counts / (target_counts + 1e-8)
+    class_iou = intersection / (union + 1e-8)
+    
+    overall_acc = correct_counts.sum() / (target_counts.sum() + 1e-8)
+    
+    # Calculate Mean IoU for the foreground classes (Classes 1, 2, 3)
+    foreground_iou = class_iou[1:].mean().item()
+
+    print(f"\n--- Evaluation Results ---")
+    print(f"Overall Accuracy:  {overall_acc.item():.4f}")
+    print(f"Class-wise Acc:    {[round(val, 4) for val in class_accuracy.cpu().tolist()]}")
+    print(f"Class-wise IoU:    {[round(val, 4) for val in class_iou.cpu().tolist()]}")
+    print(f"Foreground mIoU:   {foreground_iou:.4f}")
+    print(f"--------------------------\n")
+
+    class_acc_list = class_accuracy.cpu().tolist()
+    class_iou_list = class_iou.cpu().tolist()
+    wandb.log({
+        "eval/overall_accuracy": overall_acc.item(),
+        "eval/foreground_miou": foreground_iou,
+        **{f"eval/class_{c}_accuracy": class_acc_list[c] for c in range(num_classes)},
+        **{f"eval/class_{c}_iou": class_iou_list[c] for c in range(num_classes)},
+    })
+
+    # Return Foreground mIoU as the primary metric for tracking
+    return foreground_iou
 
 
 # 5. Training Loop

@@ -1,3 +1,8 @@
 ./setup.sh
 
 source .venv/bin/activate
+
+
+=======
+
+I think the hyperparameters are flawed because the accuracy is measured on imbalanced data. The model is optimized to predict the majority class which is the black pixels.
