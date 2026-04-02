@@ -1,4 +1,5 @@
 import os
+import random
 import argparse
 import wandb
 import torch
@@ -13,12 +14,37 @@ from sampling import generate_samples
 # Import student training and evaluation
 from train_student import train_student_distillation, evaluate_student
 
-def train_sweep():
+_ADJECTIVES = [
+    "amber", "azure", "brave", "calm", "crisp", "deep", "eager", "fierce",
+    "firm", "fleet", "fresh", "golden", "grand", "keen", "lucky", "mellow",
+    "noble", "prime", "proud", "quick", "rare", "sharp", "sleek", "smooth",
+    "solid", "swift", "vast", "warm", "wise", "young",
+]
+_NOUNS = [
+    "cloud", "comet", "delta", "drift", "dune", "ember", "falcon", "flame",
+    "flare", "flint", "frost", "gale", "grove", "hawk", "haze", "horizon",
+    "jade", "lance", "lark", "lynx", "mist", "peak", "reef", "ridge",
+    "sage", "slate", "spark", "storm", "surf", "tide", "torch", "trail",
+    "vale", "wave", "wolf",
+]
+
+def _make_coolname() -> str:
+    return f"{random.choice(_ADJECTIVES)}-{random.choice(_NOUNS)}"
+
+_run_counter = [0]  # mutable so the lambda closure can increment it
+
+
+def train_sweep(coolname: str, is_sweep: bool = False):
     api_key = os.environ.get("WANDB_API_KEY")
     if api_key:
         wandb.login(key=api_key)
-    wandb.init(project="cake_distillation")
-    run_id = wandb.run.name  # e.g. "golden-surf", used for file paths
+
+    _run_counter[0] += 1
+    group = f"sweep-{coolname}" if is_sweep else coolname
+    run_name = f"{coolname}-{_run_counter[0]}"
+
+    wandb.init(project="cake_distillation", group=group, name=run_name)
+    run_id = run_name  # used for file paths
     config = wandb.config
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -105,12 +131,17 @@ def train_sweep():
     foreground_miou = evaluate_student(student_model, model_teacher, device)
     print(f"Foreground mIoU (teacher-student): {foreground_miou:.4f}")
     wandb.log({"foreground_miou": foreground_miou})
+    # Write to summary so the value appears in the runs table view
+    wandb.run.summary.update({"foreground_miou": foreground_miou})
 
 def main():
     parser = argparse.ArgumentParser(description="Run CAKE sample generation")
     parser.add_argument("--sweep", action="store_true", help="Run hyperparameter optimization sweep with wandb")
     parser.add_argument("--sweep-count", type=int, default=10, help="Number of sweep iterations to run")
     args = parser.parse_args()
+
+    coolname = _make_coolname()
+    print(f"Run group: {'sweep-' if args.sweep else ''}{coolname}")
 
     if args.sweep:
         sweep_config = {
@@ -139,9 +170,9 @@ def main():
             }
         }
         sweep_id = wandb.sweep(sweep_config, project="cake_distillation")
-        wandb.agent(sweep_id, function=train_sweep, count=args.sweep_count)
+        wandb.agent(sweep_id, function=lambda: train_sweep(coolname, is_sweep=True), count=args.sweep_count)
     else:
-        train_sweep()
+        train_sweep(coolname, is_sweep=False)
 
 if __name__ == "__main__":
     main()
