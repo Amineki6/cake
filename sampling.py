@@ -169,11 +169,14 @@ def generate_samples(model_teacher, shape, cfg, device, logger_wandb, samples_di
             sampling_pixel_acc = (preds.argmax(dim=2) == batch_y).float().mean()
 
             if hasattr(logger_wandb, "log"):
-                logger_wandb.log({
-                    "loss": loss.item() if isinstance(loss, torch.Tensor) else loss,
-                    "sampling_pixel_acc": sampling_pixel_acc.item() if isinstance(sampling_pixel_acc, torch.Tensor) else sampling_pixel_acc,
-                    "step": idx
-                })
+                log_dict = {
+                    "sampling/loss_total": loss.item() if isinstance(loss, torch.Tensor) else loss,
+                    "sampling/pixel_acc": sampling_pixel_acc.item() if isinstance(sampling_pixel_acc, torch.Tensor) else sampling_pixel_acc,
+                    "sampling/step": idx,
+                }
+                for k, v in loss_dict.items():
+                    log_dict[f"sampling/loss_{k}"] = (v * cfg.sampling.weight[k]).item()
+                logger_wandb.log(log_dict)
 
             # 4. UPDATED: Target Saving for Student
             if cfg.sampling.smooth_labels:

@@ -9,6 +9,7 @@ import numpy as np
 import io
 import torchvision
 import torchvision.transforms as transforms
+import wandb
 
 # Import your teacher model architecture
 from autoencoder import Autoencoder
@@ -94,7 +95,8 @@ def distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2):
     soft_loss = F.kl_div(soft_student_flat, soft_teacher_flat, reduction='batchmean')
     soft_loss = soft_loss * (tau ** 2)
     
-    return (lambda_1 * hard_loss) + (lambda_2 * soft_loss)
+    total = (lambda_1 * hard_loss) + (lambda_2 * soft_loss)
+    return total, hard_loss, soft_loss
 
 # 4. Evaluation: pixel-wise teacher-student agreement on real MNIST test data
 def evaluate_student(student_model, teacher_model, device):
@@ -151,7 +153,7 @@ def train_student_distillation(data_path='results/samples.tar', student_weights_
 
     # Hyperparameters for KD
     num_epochs = 20
-    tau = 1.0       
+    tau = 3.0       
     lambda_1 = 0.5  
     lambda_2 = 1.0  
 
@@ -166,30 +168,39 @@ def train_student_distillation(data_path='results/samples.tar', student_weights_
 
     for epoch in range(num_epochs):
         student_model.train()
-        total_loss = 0.0
-        
+        total_loss = total_hard = total_soft = 0.0
+
         for images, _ in dataloader:
             # Flatten to (batch_size, 784)
             images = images.view(images.size(0), -1).to(device)
-            
+
             # Forward pass: Teacher (no gradients)
             with torch.no_grad():
                 teacher_logits = teacher_model(images)
-                
+
             # Forward pass: Student
             student_logits = student_model(images)
-            
+
             # Compute Distillation Loss
-            loss = distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2)
-            
+            loss, hard_loss, soft_loss = distillation_loss(student_logits, teacher_logits, tau, lambda_1, lambda_2)
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             scheduler.step()
-            
+
             total_loss += loss.item()
-            
-        avg_loss = total_loss / len(dataloader)
+            total_hard += hard_loss.item()
+            total_soft += soft_loss.item()
+
+        n = len(dataloader)
+        avg_loss = total_loss / n
+        wandb.log({
+            "student/loss_total": avg_loss,
+            "student/loss_hard": total_hard / n,
+            "student/loss_soft": total_soft / n,
+            "student/epoch": epoch + 1,
+        })
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
     os.makedirs(os.path.dirname(student_weights_path) or 'weights', exist_ok=True)

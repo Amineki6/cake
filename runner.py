@@ -122,19 +122,19 @@ def main():
             'parameters': {
                 'sampling_lr': {
                     'min': 0.01,
-                    'max': 1.0
+                    'max': 3.0
                 },
                 'sampling_weight_cls': {
-                    'min': 0.1,
-                    'max': 20.0
+                    'min': 1.0,
+                    'max': 10.0
                 },
                 'sampling_weight_contr': {
-                    'min': 0.001,
-                    'max': 2.0
+                    'min': 0.00001,
+                    'max': 0.5
                 },
                 'sampling_weight_tv': {
-                    'min': 10.0,
-                    'max': 1000.0
+                    'min': 500.0,
+                    'max': 5000.0
                 }
             }
         }
