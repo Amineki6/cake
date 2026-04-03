@@ -6,6 +6,9 @@ NOTE: importing autoencoder triggers module-level MNIST loading and bin calculat
 """
 
 import os
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
