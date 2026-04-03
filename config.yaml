@@ -152,6 +152,7 @@ sampling:
   num_groups: 4  # Number of contrastive groups in the sample sets
   contr_method: "mse"  # Can be one of ["mse", "snn"]
   snn_temperature: 1.0  # Soft nearest neighbor loss temperature
+  num_teacher_iters: 10 # 0 = raw noise (original behaviour)   
 
   optim:
     type: "sgd"  # Can be one of ["sgd", "adam"]
