@@ -59,7 +59,7 @@ def visualize_samples(tar_path, output_path, num_samples=16):
 
 if __name__ == "__main__":
     # Ensure paths are correct relative to the script location
-    tar_path = "results/samples.tar"
+    tar_path = "results/golden-haze-8/samples.tar"
     output_path = "sample_visualization.png"
     
     if not os.path.exists(tar_path):
