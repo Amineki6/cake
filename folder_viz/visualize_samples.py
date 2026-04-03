@@ -50,7 +50,7 @@ def visualize_samples(tar_path, output_path, num_samples=16):
                 img = img.squeeze(0)
             
             # Use 'gray' colormap since these are MNIST-like images
-            ax.imshow(img, cmap='gray')
+            ax.imshow(img, cmap='gray', vmin=0, vmax=1)
             ax.axis('off')
         else:
             # Hide empty subplots
