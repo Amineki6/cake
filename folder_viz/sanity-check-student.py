@@ -84,8 +84,8 @@ def visualize_comparison(num_samples=6, student_weights='weights/student_autoenc
         axes[2, i].axis('off')
         
     plt.tight_layout()
-    plt.savefig("sanity_check_comparison.png")
-    print("Saved comparison image to 'sanity_check_comparison.png'")
+    plt.savefig("folder_viz_output/sanity_check_comparison.png")
+    print("Saved comparison image to 'folder_viz_output/sanity_check_comparison.png'")
     plt.show()
 
 if __name__ == "__main__":

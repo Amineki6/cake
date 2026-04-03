@@ -24,7 +24,7 @@ BATCH_SIZE  = 32                     # must be divisible by NUM_GROUPS
 GROUP_BATCH = BATCH_SIZE // NUM_GROUPS
 
 WEIGHTS_PATH = "weights/mnist_4class_autoencoder.pth"
-SAVE_PATH    = "debug_teacher_output.png"
+SAVE_PATH    = "folder_viz_output/debug_teacher_output.png"
 # ─────────────────────────────────────────────────────────────────────────────
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
