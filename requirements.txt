@@ -16,3 +16,4 @@ torchmetrics==1.9.0
 torchsummary==1.5.1
 torchvision==0.16.0
 wandb
+coolname 4.1.0
