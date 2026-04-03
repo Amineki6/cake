@@ -11,7 +11,7 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 
 # Import your teacher model
-from autoencoder import Autoencoder
+from folder_first_stage.autoencoder import Autoencoder
 
 def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samples=8):
     """Extracts samples from a tar archive, passes them through the AE, and plots the results."""
