@@ -118,7 +118,7 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
 
 if __name__ == "__main__":
     # Ensure paths are correct relative to the script location
-    TAR_PATH = "results/golden-haze-8/samples.tar"
+    TAR_PATH = "results/inquisitive-aardwolf-1/samples.tar"
     OUTPUT_PATH = "folder_viz_outputs/sample_visualization_tar.png"
     WEIGHTS_PATH = "weights/mnist_4class_autoencoder.pth"
 

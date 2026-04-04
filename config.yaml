@@ -148,12 +148,13 @@ sampling:
   lr_decay_magnitude: 4  # Magnitude of lr decay. lr range will then start at $lr and ends at $lr / $10**lr_decay_magnitude
   num_steps: 500  # Number of update steps for each set
   batch_size: 64  # Number of samples for each set
-  num_batches: 1024  # Number of sets to generate
+  num_batches: 2048  # Number of sets to generate
   num_groups: 4  # Number of contrastive groups in the sample sets
   contr_method: "mse"  # Can be one of ["mse", "snn"]
   snn_temperature: 1.0  # Soft nearest neighbor loss temperature
-  num_teacher_iters: 10 # 0 = raw noise (original behaviour)   
+  num_teacher_iters: 50 # 0 = raw noise (original behaviour)   
 
+  parallel_batches: 4  # Number of batches to process simultaneously on GPU
   optim:
     type: "sgd"  # Can be one of ["sgd", "adam"]
 
