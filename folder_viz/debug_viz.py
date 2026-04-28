@@ -27,7 +27,7 @@ BATCH_SIZE  = 32                     # must be divisible by NUM_GROUPS
 GROUP_BATCH = BATCH_SIZE // NUM_GROUPS
 
 WEIGHTS_PATH = "weights/mnist_4class_autoencoder.pth"
-SAVE_PATH    = "folder_viz_output/debug_teacher_output.png"
+SAVE_PATH    = "folder_viz_outputs/debug_teacher_output.png"
 # ─────────────────────────────────────────────────────────────────────────────
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,7 +48,7 @@ for p in model_teacher.parameters():
 # sampling.py line: batch_x_init = torch.rand((group_batch_size, num_groups, *shape), device=device)
 # sampling.py line: batch_x = batch_x_init.to(dtype).requires_grad_(True)
 dtype = torch.float32   # bfloat16 not needed for inference debug
-batch_x = torch.rand((GROUP_BATCH, NUM_GROUPS, *SHAPE), device=device).to(dtype)
+batch_x = torch.randn((GROUP_BATCH, NUM_GROUPS, *SHAPE), device=device).to(dtype)
 
 # ── Forward pass — identical to sampling.py ──────────────────────────────────
 # sampling.py line: logits = model_teacher(batch_x.view(batch_size, -1))

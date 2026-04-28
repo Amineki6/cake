@@ -68,7 +68,7 @@ noise_zs = []
 remaining = N
 while remaining > 0:
     bs = min(BATCH_SIZE, remaining)
-    x_noise = torch.rand(bs, 28 * 28, device=device)   # same init as sampling.py
+    x_noise = torch.randn(bs, 28 * 28, device=device)   # same init as sampling.py
     noise_zs.append(encode_batch(x_noise))
     remaining -= bs
 noise_zs = np.concatenate(noise_zs, axis=0)   # (N, 12)
@@ -81,7 +81,7 @@ remaining = N
 while remaining > 0:
     bs = min(BATCH_SIZE, remaining)
     with torch.no_grad():
-        x_noise = torch.rand(bs, 28 * 28, device=device)
+        x_noise = torch.randn(bs, 28 * 28, device=device)
         logits   = model(x_noise)                          # (B, 4, 784)
         cls_map  = logits.argmax(dim=1).float() / 3.0     # (B, 784) in [0,1]
         reenc_zs.append(encode_batch(cls_map))
