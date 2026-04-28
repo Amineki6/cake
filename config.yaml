@@ -135,6 +135,8 @@ reference_dir:
 
 
 sampling:
+  init:
+    name: "paper" # Can be one of ["paper","range","balanced_labels", "sparse"]
   weight:  # Loss weights
     contr: 1e1
     cls: 1e3
