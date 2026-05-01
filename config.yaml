@@ -138,11 +138,11 @@ sampling:
   init:
     name: "paper" # Can be one of ["paper","range","balanced_labels", "sparse"]
   weight:  # Loss weights
-    contr: 1e1
-    cls: 1e3
-    tv: 1e5
+    contr: 0.2228360897695232
+    cls: 9.753869839991154
+    tv: 1089.2343692635227
     entropy: 0.0
-  lr: 1e-1
+  lr: 0.4022128386386449
   langevin: false  # Use langevin dynamics
   smooth_labels: true  # Use smooth labels (teacher model predictions)
   lr_decay: true  # Decay lr over different sets

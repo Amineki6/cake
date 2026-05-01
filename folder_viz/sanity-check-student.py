@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 from folder_first_stage.autoencoder import Autoencoder
-from folder_third_stage.train_student import StudentAutoencoder
+from folder_third_stage.models import StudentAutoencoder
 
 def visualize_comparison(num_samples=6, student_weights='weights/student_autoencoder.pth'):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

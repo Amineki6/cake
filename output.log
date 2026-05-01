@@ -1,0 +1,334 @@
+(cake) mkina@owl-00001:~/cake$ python folder_second_stage/runner.py 
+Calculating dynamic bins from data sample...
+Reserved Class 0 for absolute black (0.0).
+Created 3 foreground classes.
+Foreground Bin Boundaries: [0.003921568859368563, 0.5333333611488342, 0.9882352948188782, 1.0]
+Run group: amethyst-mustang
+wandb: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+wandb: Appending key for api.wandb.ai to your netrc file: /home/mkina/.netrc
+wandb: Currently logged in as: kinaamine (kinaamine-is-coding) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.26.1
+wandb: Run data is saved locally in /home/mkina/cake/wandb/run-20260428_193903-rhupazi3
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run amethyst-mustang-1
+wandb: ⭐️ View project at https://wandb.ai/kinaamine-is-coding/cake_distillation
+wandb: 🚀 View run at https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/rhupazi3
+Running on device: cuda
+Loaded trained model weights.
+Initiating sampling process...
+Batch 2048 | Init: paper | SamplingAcc: 0.2515 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+Sampling complete. Archive saved at: results/amethyst-mustang-1/samples.tar
+Training student model on distilled samples...
+Starting distillation on cuda...
+Loaded teacher weights successfully.
+Loaded 131072 synthetic samples.
+Epoch [1/40], Loss: 4.8263
+Epoch [2/40], Loss: 2.9342
+Epoch [3/40], Loss: 2.9272
+Epoch [4/40], Loss: 2.9265
+Epoch [5/40], Loss: 2.9262
+Epoch [6/40], Loss: 2.9260
+Epoch [7/40], Loss: 2.9259
+Epoch [8/40], Loss: 2.9258
+Epoch [9/40], Loss: 2.9256
+Epoch [10/40], Loss: 2.9255
+Epoch [11/40], Loss: 2.9253
+Epoch [12/40], Loss: 2.9250
+Epoch [13/40], Loss: 2.9239
+Epoch [14/40], Loss: 2.9085
+Epoch [15/40], Loss: 2.8933
+Epoch [16/40], Loss: 2.8884
+Epoch [17/40], Loss: 2.8859
+Epoch [18/40], Loss: 2.8848
+Epoch [19/40], Loss: 2.8841
+Epoch [20/40], Loss: 2.8835
+Epoch [21/40], Loss: 2.8829
+Epoch [22/40], Loss: 2.8824
+Epoch [23/40], Loss: 2.8818
+Epoch [24/40], Loss: 2.8812
+Epoch [25/40], Loss: 2.8807
+Epoch [26/40], Loss: 2.8802
+Epoch [27/40], Loss: 2.8798
+Epoch [28/40], Loss: 2.8794
+Epoch [29/40], Loss: 2.8790
+Epoch [30/40], Loss: 2.8786
+Epoch [31/40], Loss: 2.8782
+Epoch [32/40], Loss: 2.8778
+Epoch [33/40], Loss: 2.8773
+Epoch [34/40], Loss: 2.8766
+Epoch [35/40], Loss: 2.8751
+Epoch [36/40], Loss: 2.8716
+Epoch [37/40], Loss: 2.8663
+Epoch [38/40], Loss: 2.8629
+Epoch [39/40], Loss: 2.8616
+Epoch [40/40], Loss: 2.8613
+Distillation finished. Student autoencoder saved to './weights/student_amethyst-mustang-1.pth'
+Evaluating student vs teacher on real MNIST test set...
+
+--- Evaluation Results ---
+Overall Accuracy:  0.8109
+Class-wise Acc:    [0.9809, 0.0665, 0.059, 0.0588]
+Class-wise IoU:    [0.825, 0.0508, 0.0478, 0.0535]
+Foreground mIoU:   0.0507
+--------------------------
+
+Foreground mIoU (teacher-student): 0.0507
+wandb: 
+wandb: 🚀 View run amethyst-mustang-1 at: https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/rhupazi3
+wandb: Find logs at: wandb/run-20260428_193903-rhupazi3/logs
+(cake) mkina@owl-00001:~/cake$ 
+
+
+
+
+
+
+
+
+
+
+(cake) mkina@owl-00001:~/cake$ python folder_second_stage/runner.py 
+Calculating dynamic bins from data sample...
+Reserved Class 0 for absolute black (0.0).
+Created 3 foreground classes.
+Foreground Bin Boundaries: [0.003921568859368563, 0.5490196347236633, 0.9882352948188782, 1.0]
+Run group: vehement-chimera
+wandb: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+wandb: Appending key for api.wandb.ai to your netrc file: /home/mkina/.netrc
+wandb: Currently logged in as: kinaamine (kinaamine-is-coding) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.26.1
+wandb: Run data is saved locally in /home/mkina/cake/wandb/run-20260428_204841-sbof029p
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run vehement-chimera-1
+wandb: ⭐️ View project at https://wandb.ai/kinaamine-is-coding/cake_distillation
+wandb: 🚀 View run at https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/sbof029p
+Running on device: cuda
+Loaded trained model weights.
+Initiating sampling process...
+Batch 2048 | Init: range | SamplingAcc: 0.2502 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+Sampling complete. Archive saved at: results/vehement-chimera-1/samples.tar
+Training student model on distilled samples...
+Starting distillation on cuda...
+Loaded teacher weights successfully.
+Loaded 131072 synthetic samples.
+Epoch [1/40], Loss: 3.2518
+Epoch [2/40], Loss: 1.8591
+Epoch [3/40], Loss: 1.8557
+Epoch [4/40], Loss: 1.8557
+Epoch [5/40], Loss: 1.8556
+Epoch [6/40], Loss: 1.8556
+Epoch [7/40], Loss: 1.8556
+Epoch [8/40], Loss: 1.8555
+Epoch [9/40], Loss: 1.8555
+Epoch [10/40], Loss: 1.8555
+Epoch [11/40], Loss: 1.8555
+Epoch [12/40], Loss: 1.8555
+Epoch [13/40], Loss: 1.8555
+Epoch [14/40], Loss: 1.8555
+Epoch [15/40], Loss: 1.8555
+Epoch [16/40], Loss: 1.8555
+Epoch [17/40], Loss: 1.8555
+Epoch [18/40], Loss: 1.8555
+Epoch [19/40], Loss: 1.8555
+Epoch [20/40], Loss: 1.8555
+Epoch [21/40], Loss: 1.8555
+Epoch [22/40], Loss: 1.8555
+Epoch [23/40], Loss: 1.8555
+Epoch [24/40], Loss: 1.8555
+Epoch [25/40], Loss: 1.8555
+Epoch [26/40], Loss: 1.8555
+Epoch [27/40], Loss: 1.8555
+Epoch [28/40], Loss: 1.8555
+Epoch [29/40], Loss: 1.8555
+Epoch [30/40], Loss: 1.8555
+Epoch [31/40], Loss: 1.8555
+Epoch [32/40], Loss: 1.8555
+Epoch [33/40], Loss: 1.8555
+Epoch [34/40], Loss: 1.8555
+Epoch [35/40], Loss: 1.8554
+Epoch [36/40], Loss: 1.8554
+Epoch [37/40], Loss: 1.8554
+Epoch [38/40], Loss: 1.8554
+Epoch [39/40], Loss: 1.8554
+Epoch [40/40], Loss: 1.8554
+Distillation finished. Student autoencoder saved to './weights/student_vehement-chimera-1.pth'
+Evaluating student vs teacher on real MNIST test set...
+
+--- Evaluation Results ---
+Overall Accuracy:  0.6952
+Class-wise Acc:    [0.8203, 0.1275, 0.1492, 0.1496]
+Class-wise IoU:    [0.7252, 0.0648, 0.0695, 0.0715]
+Foreground mIoU:   0.0686
+--------------------------
+
+Foreground mIoU (teacher-student): 0.0686
+wandb: 
+wandb: 🚀 View run vehement-chimera-1 at: https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/sbof029p
+wandb: Find logs at: wandb/run-20260428_204841-sbof029p/logs
+
+
+
+
+
+
+(cake) mkina@owl-00001:~/cake$ python folder_second_stage/runner.py 
+Calculating dynamic bins from data sample...
+Reserved Class 0 for absolute black (0.0).
+Created 3 foreground classes.
+Foreground Bin Boundaries: [0.003921568859368563, 0.5333333611488342, 0.9882352948188782, 1.0]
+Run group: deft-puffin
+wandb: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+wandb: Appending key for api.wandb.ai to your netrc file: /home/mkina/.netrc
+wandb: Currently logged in as: kinaamine (kinaamine-is-coding) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.26.1
+wandb: Run data is saved locally in /home/mkina/cake/wandb/run-20260428_213858-gys5t9e7
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run deft-puffin-1
+wandb: ⭐️ View project at https://wandb.ai/kinaamine-is-coding/cake_distillation
+wandb: 🚀 View run at https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/gys5t9e7
+Running on device: cuda
+Loaded trained model weights.
+Initiating sampling process...
+Batch 2048 | Init: sparse | SamplingAcc: 0.2473 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+Sampling complete. Archive saved at: results/deft-puffin-1/samples.tar
+Training student model on distilled samples...
+Starting distillation on cuda...
+Loaded teacher weights successfully.
+Loaded 131072 synthetic samples.
+Epoch [1/40], Loss: 3.6165
+Epoch [2/40], Loss: 1.9562
+Epoch [3/40], Loss: 1.9484
+Epoch [4/40], Loss: 1.9482
+Epoch [5/40], Loss: 1.9481
+Epoch [6/40], Loss: 1.9480
+Epoch [7/40], Loss: 1.9479
+Epoch [8/40], Loss: 1.9478
+Epoch [9/40], Loss: 1.9478
+Epoch [10/40], Loss: 1.9478
+Epoch [11/40], Loss: 1.9478
+Epoch [12/40], Loss: 1.9478
+Epoch [13/40], Loss: 1.9478
+Epoch [14/40], Loss: 1.9478
+Epoch [15/40], Loss: 1.9478
+Epoch [16/40], Loss: 1.9478
+Epoch [17/40], Loss: 1.9478
+Epoch [18/40], Loss: 1.9478
+Epoch [19/40], Loss: 1.9478
+Epoch [20/40], Loss: 1.9478
+Epoch [21/40], Loss: 1.9478
+Epoch [22/40], Loss: 1.9478
+Epoch [23/40], Loss: 1.9478
+Epoch [24/40], Loss: 1.9478
+Epoch [25/40], Loss: 1.9478
+Epoch [26/40], Loss: 1.9478
+Epoch [27/40], Loss: 1.9477
+Epoch [28/40], Loss: 1.9477
+Epoch [29/40], Loss: 1.9477
+Epoch [30/40], Loss: 1.9477
+Epoch [31/40], Loss: 1.9477
+Epoch [32/40], Loss: 1.9477
+Epoch [33/40], Loss: 1.9477
+Epoch [34/40], Loss: 1.9477
+Epoch [35/40], Loss: 1.9477
+Epoch [36/40], Loss: 1.9477
+Epoch [37/40], Loss: 1.9477
+Epoch [38/40], Loss: 1.9477
+Epoch [39/40], Loss: 1.9476
+Epoch [40/40], Loss: 1.9476
+Distillation finished. Student autoencoder saved to './weights/student_deft-puffin-1.pth'
+Evaluating student vs teacher on real MNIST test set...
+
+--- Evaluation Results ---
+Overall Accuracy:  0.8151
+Class-wise Acc:    [1.0, 0.0, 0.0, 0.0]
+Class-wise IoU:    [0.8151, 0.0, 0.0, 0.0]
+Foreground mIoU:   0.0000
+--------------------------
+
+Foreground mIoU (teacher-student): 0.0000
+wandb: 
+wandb: 🚀 View run deft-puffin-1 at: https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/gys5t9e7
+wandb: Find logs at: wandb/run-20260428_213858-gys5t9e7/logs
+
+
+
+
+
+(cake) mkina@owl-00001:~/cake$ python folder_second_stage/runner.py 
+Calculating dynamic bins from data sample...
+Reserved Class 0 for absolute black (0.0).
+Created 3 foreground classes.
+Foreground Bin Boundaries: [0.003921568859368563, 0.5333333611488342, 0.9882352948188782, 1.0]
+Run group: talented-swallow
+wandb: [wandb.login()] Using explicit session credentials for https://api.wandb.ai.
+wandb: Appending key for api.wandb.ai to your netrc file: /home/mkina/.netrc
+wandb: Currently logged in as: kinaamine (kinaamine-is-coding) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.26.1
+wandb: Run data is saved locally in /home/mkina/cake/wandb/run-20260428_213816-dhutjd3b
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run talented-swallow-1
+wandb: ⭐️ View project at https://wandb.ai/kinaamine-is-coding/cake_distillation
+wandb: 🚀 View run at https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/dhutjd3b
+Running on device: cuda
+Loaded trained model weights.
+Initiating sampling process...
+Batch 2048 | Init: balanced_labels | SamplingAcc: 0.2491 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+Sampling complete. Archive saved at: results/talented-swallow-1/samples.tar
+Training student model on distilled samples...
+Starting distillation on cuda...
+Loaded teacher weights successfully.
+Loaded 131072 synthetic samples.
+Epoch [1/40], Loss: 4.7044
+Epoch [2/40], Loss: 2.9318
+Epoch [3/40], Loss: 2.9272
+Epoch [4/40], Loss: 2.9264
+Epoch [5/40], Loss: 2.9260
+Epoch [6/40], Loss: 2.9258
+Epoch [7/40], Loss: 2.9256
+Epoch [8/40], Loss: 2.9255
+Epoch [9/40], Loss: 2.9254
+Epoch [10/40], Loss: 2.9253
+Epoch [11/40], Loss: 2.9252
+Epoch [12/40], Loss: 2.9250
+Epoch [13/40], Loss: 2.9249
+Epoch [14/40], Loss: 2.9248
+Epoch [15/40], Loss: 2.9246
+Epoch [16/40], Loss: 2.9244
+Epoch [17/40], Loss: 2.9239
+Epoch [18/40], Loss: 2.9180
+Epoch [19/40], Loss: 2.8943
+Epoch [20/40], Loss: 2.8879
+Epoch [21/40], Loss: 2.8858
+Epoch [22/40], Loss: 2.8848
+Epoch [23/40], Loss: 2.8840
+Epoch [24/40], Loss: 2.8835
+Epoch [25/40], Loss: 2.8829
+Epoch [26/40], Loss: 2.8824
+Epoch [27/40], Loss: 2.8819
+Epoch [28/40], Loss: 2.8814
+Epoch [29/40], Loss: 2.8809
+Epoch [30/40], Loss: 2.8804
+Epoch [31/40], Loss: 2.8799
+Epoch [32/40], Loss: 2.8795
+Epoch [33/40], Loss: 2.8791
+Epoch [34/40], Loss: 2.8788
+Epoch [35/40], Loss: 2.8785
+Epoch [36/40], Loss: 2.8783
+Epoch [37/40], Loss: 2.8781
+Epoch [38/40], Loss: 2.8780
+Epoch [39/40], Loss: 2.8779
+Epoch [40/40], Loss: 2.8778
+Distillation finished. Student autoencoder saved to './weights/student_talented-swallow-1.pth'
+Evaluating student vs teacher on real MNIST test set...
+
+--- Evaluation Results ---
+Overall Accuracy:  0.8122
+Class-wise Acc:    [0.98, 0.073, 0.0576, 0.0797]
+Class-wise IoU:    [0.8273, 0.0546, 0.048, 0.071]
+Foreground mIoU:   0.0579
+--------------------------
+
+Foreground mIoU (teacher-student): 0.0579
+wandb: 
+wandb: 🚀 View run talented-swallow-1 at: https://wandb.ai/kinaamine-is-coding/cake_distillation/runs/dhutjd3b
+wandb: Find logs at: wandb/run-20260428_213816-dhutjd3b/logs
