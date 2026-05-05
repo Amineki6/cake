@@ -1,7 +1,7 @@
 import os
 import sys
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(root_dir)
+import argparse
+import random
 import tarfile
 import io
 import numpy as np
@@ -10,33 +10,44 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(root_dir)
+
 # Import your teacher model
 from folder_first_stage.autoencoder import Autoencoder
 
 def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samples=8):
-    """Extracts samples from a tar archive, passes them through the AE, and plots the results."""
+    """Extracts random samples from a tar archive, passes them through the AE, and plots the results."""
     images = []
     
-    print(f"Opening {tar_path}...")
+    print(f"Scanning {tar_path}...")
     with tarfile.open(tar_path, "r") as tar:
-        for member in tar.getmembers():
-            if member.name.endswith(".npz"):
-                f = tar.extractfile(member)
-                if f is not None:
-                    with np.load(io.BytesIO(f.read())) as data:
-                        # Extract the 'data' array, which is expected to be (1, 28, 28)
-                        images.append(data['data'])
-                        
-                        if len(images) >= num_samples:
-                            break
+        # Get all npz members first so we can randomize them
+        members = [m for m in tar.getmembers() if m.name.endswith(".npz")]
+        
+        if not members:
+            print("No .npz samples found in the archive.")
+            return
+            
+        # Shuffle the members to randomize selection across the archive
+        random.shuffle(members)
+        selected_members = members[:num_samples]
+        
+        print(f"Extracting {len(selected_members)} random samples...")
+        for member in selected_members:
+            f = tar.extractfile(member)
+            if f is not None:
+                with np.load(io.BytesIO(f.read())) as data:
+                    # Extract the 'data' array, which is expected to be (1, 28, 28)
+                    images.append(data['data'])
                             
     if not images:
-        print("No .npz samples found in the archive.")
+        print("Failed to load data from the extracted samples.")
         return
         
-    print(f"Extracted {len(images)} samples. Loading model...")
+    print(f"Loaded {len(images)} samples. Loading model...")
     
-    # ── Setup Device & Model ──────────────────────────────────────────────────
+    # -- Setup Device & Model --------------------------------------------------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model_teacher = Autoencoder().to(device)
     
@@ -50,7 +61,7 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
     for p in model_teacher.parameters():
         p.requires_grad_(False)
 
-    # ── Inference ─────────────────────────────────────────────────────────────
+    # -- Inference -------------------------------------------------------------
     # Convert extracted images to a batch tensor
     images_np = np.stack(images) # Shape: (N, 1, 28, 28)
     N = images_np.shape[0]
@@ -68,7 +79,7 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
     pred_classes = preds.argmax(dim=1)               # (N, 784)
     pred_maps = pred_classes.reshape(N, 28, 28)      # (N, 28, 28)
     
-    # ── Plotting ──────────────────────────────────────────────────────────────
+    # -- Plotting --------------------------------------------------------------
     print("Generating visualization...")
     
     # Define 4 distinct grayscale shades: Black, Dark Gray, Light Gray, White
@@ -87,7 +98,7 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
         img_input = images_np[i].squeeze() # Convert (1, 28, 28) to (28, 28)
         axes[0, i].imshow(img_input, cmap="gray", vmin=0, vmax=1)
         axes[0, i].axis("off")
-        axes[0, i].set_title(f"Sample #{i}", fontsize=8)
+        axes[0, i].set_title(f"Random Sample #{i}", fontsize=8)
         if i == 0:
             axes[0, i].set_ylabel("Tar Input", fontsize=9)
 
@@ -99,7 +110,7 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
             axes[1, i].set_ylabel("Teacher\nPred", fontsize=9)
 
     # Center figure-level legend with borders
-    labels = ["0 · background", "1 · fg low", "2 · fg mid", "3 · fg high"]
+    labels = ["0 * background", "1 * fg low", "2 * fg mid", "3 * fg high"]
     patches = [
         mpatches.Patch(color=cmap.colors[i], label=labels[i], edgecolor="black", linewidth=1) 
         for i in range(4)
@@ -117,12 +128,35 @@ def visualize_tar_with_autoencoder(tar_path, output_path, weights_path, num_samp
     print(f"Visualization perfectly saved to {output_path}")
 
 if __name__ == "__main__":
-    # Ensure paths are correct relative to the script location
-    TAR_PATH = "results/inquisitive-aardwolf-1/samples.tar"
-    OUTPUT_PATH = "folder_viz_outputs/sample_visualization_tar.png"
-    WEIGHTS_PATH = "weights/mnist_4class_autoencoder.pth"
+    parser = argparse.ArgumentParser(description="Extract and visualize random samples from a tar archive using a Teacher Autoencoder.")
+    
+    # Command-line flags with default values
+    parser.add_argument("--tar_path", type=str, default="results/heavy-pegasus-1/samples.tar",
+                        help="Path to the input tar archive containing .npz files.")
+    parser.add_argument("--output_path", type=str, default="folder_viz_outputs/sample_visualization_tar.png",
+                        help="Path where the generated visualization PNG will be saved.")
+    parser.add_argument("--weights_path", type=str, default="weights/mnist_4class_autoencoder.pth",
+                        help="Path to the autoencoder model weights (.pth).")
+    parser.add_argument("--num_samples", type=int, default=8,
+                        help="Number of random samples to extract and visualize.")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Optional random seed for reproducible random sampling.")
 
-    if not os.path.exists(TAR_PATH):
-        print(f"Error: Archive {TAR_PATH} not found.")
+    args = parser.parse_args()
+
+    # Set random seeds if provided
+    if args.seed is not None:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        print(f"Random seed set to {args.seed}")
+
+    if not os.path.exists(args.tar_path):
+        print(f"Error: Archive {args.tar_path} not found.")
     else:
-        visualize_tar_with_autoencoder(TAR_PATH, OUTPUT_PATH, WEIGHTS_PATH)
+        visualize_tar_with_autoencoder(
+            tar_path=args.tar_path, 
+            output_path=args.output_path, 
+            weights_path=args.weights_path,
+            num_samples=args.num_samples
+        )
