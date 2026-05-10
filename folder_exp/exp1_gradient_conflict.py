@@ -3,9 +3,10 @@ import sys
 import torch
 import numpy as np
 
-# Add project root to sys.path
+# Add project root and folder_second_stage to sys.path
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
+sys.path.append(os.path.join(root_dir, "folder_second_stage"))
 
 from folder_first_stage.autoencoder import Autoencoder
 from folder_second_stage.sampling import _SamplingConfig, _forward_teacher, _amp_context, compute_loss, NUM_CLASSES, _build_shuffled_targets
