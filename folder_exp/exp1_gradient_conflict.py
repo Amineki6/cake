@@ -122,10 +122,6 @@ def main():
     y_iter = get_iterated_targets(model_teacher, X, scfg, shape, device, num_iters=1)
     evaluate_targets("Iterative Noise (N=1)", model_teacher, X, y_iter, scfg, device)
     
-    print("=" * 60)
-    print("Conclusion: A lower gradient norm and initial loss indicate that")
-    print("the targets are better aligned with the data manifold and don't")
-    print("force the optimization into a geometric tug-of-war.")
 
 if __name__ == "__main__":
     main()
